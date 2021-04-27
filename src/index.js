@@ -132,7 +132,7 @@ const userWizard = new Scenes.WizardScene(
 
 const stage = new Scenes.Stage([userWizard]);
 stage.command('cancel', (ctx) => {
-	ctx.reply('Operation canceled');
+	ctx.reply('Operation canceled', Markup.removeKeyboard());
 	return ctx.scene.leave();
 });
 
