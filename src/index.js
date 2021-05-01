@@ -32,6 +32,17 @@ bot.command('start', (ctx) => {
 	);
 });
 
+//Allows DOO to set their name
+let dooName = '[DOO NAME]';
+bot.hears(/^\/doo (.*)$/, (ctx) => {
+	dooName = ctx.match[1];
+	if (dooName === undefined) {
+		ctx.reply('Pleae key in a name!');
+		return;
+	}
+	ctx.reply(`Today's DOO is ${dooName}.`);
+});
+
 // Generates a template to send to the DOO when people report sick
 const userWizard = new Scenes.WizardScene(
 	'user-wizard',
@@ -114,7 +125,7 @@ const userWizard = new Scenes.WizardScene(
 		mcEnd = `${day}${month}${year}`;
 		ctx.scene.session.swab = ctx.message.text == 'Yes' ? '' : ' not';
 		ctx.reply(
-			`CAA ${date} by [DOO NAME]. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank} ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.`,
+			`CAA ${date} by ${dooName}. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank} ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.`,
 			Markup.removeKeyboard()
 		);
 		return await ctx.scene.leave();
@@ -123,7 +134,7 @@ const userWizard = new Scenes.WizardScene(
 	.action('inCamp', (ctx) => {
 		ctx.scene.session.location = 'Khatib Medical Centre';
 		ctx.reply('Enter masked NRIC.');
-		return ctx.wizard.selectStep(3);
+		return ctx.wizard.selectStep(4);
 	})
 	.action('outsideCamp', (ctx) => {
 		ctx.reply('Where did he report sick at?');
