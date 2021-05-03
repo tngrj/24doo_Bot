@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Telegraf, Markup, Stage, session, Scenes } = require('telegraf');
 const express = require('express');
+const moment = require('moment');
 
 //Initializing Bot
 const bot = new Telegraf(process.env.TOKEN);
@@ -14,17 +15,9 @@ app.listen(process.env.PORT || 3000, () => {
 	console.log(`24 DOO Bot listening on port ${process.env.PORT}!`);
 });
 
-// Date Generation for other modules
+// Date Generation
 let newDate = new Date();
-let monthNames = newDate.toLocaleString('default', { month: 'long' });
-const dtf = new Intl.DateTimeFormat('en-GB', {
-	timeZone: 'Asia/Singapore',
-	year: '2-digit',
-	month: '2-digit',
-	day: '2-digit',
-});
-let [{ value: day }, , { value: month }, , { value: year }] = dtf.formatToParts(newDate);
-const date = `${day}${month}${year}`;
+let date = moment().format('DDMMYY');
 
 bot.command('start', (ctx) => {
 	ctx.replyWithHTML(
@@ -85,9 +78,13 @@ const userWizard = new Scenes.WizardScene(
 		return ctx.wizard.next();
 	},
 	(ctx) => {
-		ctx.scene.session.time = ctx.message.text;
-		ctx.reply('What did he report sick for?');
-		return ctx.wizard.next();
+		if (!ctx.message.text.match('^[0-9]{4}$')) {
+			ctx.reply(`Please input the correct format!`);
+		} else {
+			ctx.scene.session.time = ctx.message.text;
+			ctx.reply('What did he report sick for?');
+			return ctx.wizard.next();
+		}
 	},
 	(ctx) => {
 		ctx.scene.session.reason = ctx.message.text;
@@ -104,8 +101,12 @@ const userWizard = new Scenes.WizardScene(
 			ctx.reply(`Please input a number!`);
 		} else {
 			ctx.scene.session.duration = ctx.message.text;
-			ctx.reply('What medicine did he get?');
-			return ctx.wizard.next();
+			ctx.reply(
+				'Was there any medicine given?',
+				Markup.inlineKeyboard([
+					[Markup.button.callback('Yes', 'yes'), Markup.button.callback('No', 'no')],
+				])
+			);
 		}
 	},
 	(ctx) => {
@@ -117,15 +118,21 @@ const userWizard = new Scenes.WizardScene(
 		return ctx.wizard.next();
 	},
 	async (ctx) => {
-		let time = ctx.scene.session.duration - 1;
-		let mcEnd = new Date(Date.now() + time * 24 * 60 * 60 * 1000);
-		const [{ value: day }, , { value: month }, , { value: year }] = dtf.formatToParts(
-			mcEnd
-		);
-		mcEnd = `${day}${month}${year}`;
+		mcEnd = moment()
+			.add(ctx.scene.session.duration - 1, 'd')
+			.format('DDMMYY');
 		ctx.scene.session.swab = ctx.message.text == 'Yes' ? '' : ' not';
+		let updateDate = mcEnd;
+		let eSash = '';
+		if (ctx.message.text == 'Yes') {
+			ctx.replyWithHTML(
+				`<b>Forward the next message and update DOO if you fall into any of the below criteria</b>\n\n1. Is Serviceman experiencing symptoms of ARI? (Cough, Sore Throat, Runny Nose\n\n2. Travelled out of SG?\n\n3. Close contact with confirmed case?\n\n4. Visited any foreign worker dormitories?\n\n5. Worked in high risk areas? (Community Care / Isolation Facilities)\n\n6. 4 or more  days of symptoms of ARI? (Cough, Sore Throat, Runny Nose) w/ fever?)`
+			);
+			updateDate = moment().add(1, 'd').format('DDMMYY');
+			eSash = 'E-SASH has been filed.';
+		}
 		ctx.reply(
-			`CAA ${date} by ${dooName}. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank} ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.`,
+			`CAA ${date} by ${dooName}. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank} ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.\n\nDOO on ${updateDate} to follow up on updates.\n\n${eSash}\nCSDO has been informed.`,
 			Markup.removeKeyboard()
 		);
 		return await ctx.scene.leave();
@@ -138,6 +145,18 @@ const userWizard = new Scenes.WizardScene(
 	})
 	.action('outsideCamp', (ctx) => {
 		ctx.reply('Where did he report sick at?');
+		return ctx.wizard.next();
+	})
+	.action('no', (ctx) => {
+		ctx.scene.session.medicine = 'No';
+		ctx.reply(
+			'Was swab test administered?',
+			Markup.keyboard(['Yes', 'No']).oneTime().resize()
+		);
+		return ctx.wizard.selectStep(9);
+	})
+	.action('yes', (ctx) => {
+		ctx.reply('What medicine was given?');
 		return ctx.wizard.next();
 	});
 
