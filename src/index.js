@@ -57,7 +57,7 @@ admin
 	});
 
 bot.hears(/^\/doo (.*)$/, (ctx) => {
-	dooName = ctx.match[1];
+	dooName = ctx.match[1].toUpperCase();
 	if (dooName === undefined) {
 		ctx.reply('Pleae key in a name!');
 		return;
