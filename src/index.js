@@ -1,10 +1,21 @@
 require('dotenv').config();
 const { Telegraf, Markup, Stage, session, Scenes } = require('telegraf');
 const express = require('express');
+const admin = require('firebase-admin');
 const moment = require('moment');
 
 //Initializing Bot
 const bot = new Telegraf(process.env.TOKEN);
+
+//Initialize Firebase Admin
+admin.initializeApp({
+	credential: admin.credential.cert({
+		projectId: process.env.PROJECT_ID,
+		private_key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n'),
+		client_email: process.env.CLIENT_EMAIL,
+	}),
+	databaseURL: process.env.DATABASE_URL,
+});
 
 // Initialise Express
 const app = express();
@@ -26,13 +37,34 @@ bot.command('start', (ctx) => {
 });
 
 //Allows DOO to set their name
-let dooName = '[DOO NAME]';
+
+// This was to initially generate the branch for us to read the doo name
+// bot.command('generate', (ctx) => {
+// 	let BDS = admin.database().ref('dooReport/');
+// 	Placeholder = '[DOO NAME]';
+// 	BDS.set({
+// 		dooName: Placeholder,
+// 	});
+// });
+
+let dooName;
+
+admin
+	.database()
+	.ref('dooReport/')
+	.once('value', (x) => {
+		dooName = x.val().dooName;
+	});
+
 bot.hears(/^\/doo (.*)$/, (ctx) => {
 	dooName = ctx.match[1];
 	if (dooName === undefined) {
 		ctx.reply('Pleae key in a name!');
 		return;
 	}
+	admin.database().ref('dooReport/').update({
+		dooName: dooName,
+	});
 	ctx.reply(`Today's DOO is ${dooName}.`);
 });
 
@@ -111,6 +143,7 @@ const userWizard = new Scenes.WizardScene(
 	},
 	(ctx) => {
 		ctx.scene.session.medicine = ctx.message.text;
+		//https://github.com/esamattis/underscore.string If I want to be particular
 		ctx.reply(
 			'Was swab test administered?',
 			Markup.keyboard(['Yes', 'No']).oneTime().resize()
