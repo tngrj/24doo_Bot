@@ -162,10 +162,13 @@ const userWizard = new Scenes.WizardScene(
 				`<b>Forward the next message and update DOO if you fall into any of the below criteria</b>\n\n1. Is Serviceman experiencing symptoms of ARI? (Cough, Sore Throat, Runny Nose\n\n2. Travelled out of SG?\n\n3. Close contact with confirmed case?\n\n4. Visited any foreign worker dormitories?\n\n5. Worked in high risk areas? (Community Care / Isolation Facilities)\n\n6. 4 or more  days of symptoms of ARI? (Cough, Sore Throat, Runny Nose) w/ fever?)`
 			);
 			updateDate = moment().add(1, 'd').format('DDMMYY');
-			eSash = 'E-SASH has been filed.';
+			eSash = '\nE-SASH has been filed.';
 		}
+		let asis = '';
+		if (ctx.scene.session.duration > 3)
+			asis = 'ASIS report has been made.\nIR Ref No.: 24 SA/2021/[REPORT NO]';
 		ctx.reply(
-			`CAA ${date} by ${dooName}. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank} ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.\n\nDOO on ${updateDate} to follow up on updates.\n\n${eSash}\nCSDO has been informed.`,
+			`CAA ${date} by ${dooName}. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank} ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.\n\nDOO on ${updateDate} to follow up on updates.\n${eSash}\nCDSO has been informed.\n${asis}`,
 			Markup.removeKeyboard()
 		);
 		return await ctx.scene.leave();
