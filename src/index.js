@@ -4,10 +4,10 @@ const express = require('express');
 const admin = require('firebase-admin');
 const moment = require('moment');
 
-//Initializing Bot
+// Initializing Bot
 const bot = new Telegraf(process.env.TOKEN);
 
-//Initialize Firebase Admin
+// Initialize Firebase Admin
 admin.initializeApp({
 	credential: admin.credential.cert({
 		projectId: process.env.PROJECT_ID,
@@ -16,6 +16,8 @@ admin.initializeApp({
 	}),
 	databaseURL: process.env.DATABASE_URL,
 });
+
+let db = admin.database().ref('dooReport/');
 
 // Initialise Express
 const app = express();
@@ -36,25 +38,21 @@ bot.command('start', (ctx) => {
 	);
 });
 
-//Allows DOO to set their name
+// Allows DOO to set their name
 
 // This was to initially generate the branch for us to read the doo name
 // bot.command('generate', (ctx) => {
-// 	let BDS = admin.database().ref('dooReport/');
 // 	Placeholder = '[DOO NAME]';
-// 	BDS.set({
+// 	db.set({
 // 		dooName: Placeholder,
 // 	});
 // });
 
 let dooName;
 
-admin
-	.database()
-	.ref('dooReport/')
-	.once('value', (x) => {
-		dooName = x.val().dooName;
-	});
+db.once('value', (x) => {
+	dooName = x.val().dooName;
+});
 
 bot.hears(/^\/doo (.*)$/, (ctx) => {
 	dooName = ctx.match[1].toUpperCase();
@@ -62,9 +60,13 @@ bot.hears(/^\/doo (.*)$/, (ctx) => {
 		ctx.reply('Pleae key in a name!');
 		return;
 	}
-	admin.database().ref('dooReport/').update({
+	db.update({
 		dooName: dooName,
 	});
+	ctx.reply(`Today's DOO is ${dooName}.`);
+});
+
+bot.command('today', (ctx) => {
 	ctx.reply(`Today's DOO is ${dooName}.`);
 });
 
@@ -168,7 +170,7 @@ const userWizard = new Scenes.WizardScene(
 		if (ctx.scene.session.duration > 3)
 			asis = 'ASIS report has been made.\nIR Ref No.: 24 SA/2021/[REPORT NO]';
 		ctx.reply(
-			`CAA ${date} by ${dooName}. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank} ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.\n\nDOO on ${updateDate} to follow up on updates.\n${eSash}\nCDSO has been informed.\n${asis}`,
+			`CAA ${date} by ${dooName}. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank}, ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ${ctx.scene.session.duration} days ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.\n\nDOO on ${updateDate} to follow up on updates.\n${eSash}\nCDSO has been informed.\n${asis}`,
 			Markup.removeKeyboard()
 		);
 		return await ctx.scene.leave();
