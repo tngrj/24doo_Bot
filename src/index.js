@@ -161,7 +161,7 @@ const userWizard = new Scenes.WizardScene(
 		let eSash = '';
 		if (ctx.message.text == 'Yes') {
 			ctx.replyWithHTML(
-				`<b>Forward the next message and update DOO if you fall into any of the below criteria</b>\n\n1. Is Serviceman experiencing symptoms of ARI? (Cough, Sore Throat, Runny Nose\n\n2. Travelled out of SG?\n\n3. Close contact with confirmed case?\n\n4. Visited any foreign worker dormitories?\n\n5. Worked in high risk areas? (Community Care / Isolation Facilities)\n\n6. 4 or more  days of symptoms of ARI? (Cough, Sore Throat, Runny Nose) w/ fever?)`
+				`<b>Forward the next message and update DOO if you fall into any of the below criteria</b>\n\n1. Did you travel overseas in the past 14 days?\n\n2. Did you make contact with a confirmed COVID-19 infected case?\n\n3. Did you stay in a foreign worker domitory?\n\n4. Do you work in an environment with higher risk of exposure to COVID-19?\n\n5. Do you have any ARI symptoms, fever (37.5°C or above)?\n\n6. Any pneumonia diagnosis from the doctor?`
 			);
 			updateDate = moment().add(1, 'd').format('DDMMYY');
 			eSash = '\nE-SASH has been filed.';
