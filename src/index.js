@@ -104,7 +104,7 @@ const userWizard = new Scenes.WizardScene(
 	},
 	(ctx) => {
 		ctx.scene.session.location = ctx.message.text.toUpperCase();
-		ctx.reply('Enter masked NRIC.');
+		ctx.reply('Enter masked NRIC. (SXXXX123A)');
 		return ctx.wizard.next();
 	},
 	(ctx) => {
