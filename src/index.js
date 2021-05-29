@@ -71,6 +71,7 @@ bot.command('today', (ctx) => {
 });
 
 // Generates a template to send to the DOO when people report sick
+let dooMessage;
 const userWizard = new Scenes.WizardScene(
 	'user-wizard',
 	(ctx) => {
@@ -169,11 +170,12 @@ const userWizard = new Scenes.WizardScene(
 		let asis = '';
 		if (ctx.scene.session.duration > 3)
 			asis = 'ASIS report has been made.\nIR Ref No.: 24 SA/2021/[REPORT NO]';
-		ctx.reply(
+		dooMessage = ctx.reply(
 			`CAA ${date} by ${dooName}. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank}, ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ${ctx.scene.session.duration} days ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.\n\nDOO on ${updateDate} to follow up on updates.\n${eSash}\nCDSO has been informed.\n${asis}`,
-			Markup.removeKeyboard()
+			Markup.inlineKeyboard([
+				Markup.button.callback('Send message to the DOO', 'sendDOO'),
+			])
 		);
-		return await ctx.scene.leave();
 	}
 )
 	.action('inCamp', (ctx) => {
@@ -196,6 +198,15 @@ const userWizard = new Scenes.WizardScene(
 	.action('yes', (ctx) => {
 		ctx.reply('What medicine was given?');
 		return ctx.wizard.next();
+	})
+	.action('sendDOO', (ctx) => {
+		ctx.forwardMessage(
+			process.env.DOOPHONEID,
+			process.env.REPORTBOTID,
+			dooMessage.message_id
+		);
+		ctx.reply('Report was sent to the DOO', Markup.removeKeyboard());
+		return ctx.scene.leave();
 	});
 
 const stage = new Scenes.Stage([userWizard]);
