@@ -29,7 +29,6 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 // Date Generation
-let newDate = new Date();
 let date = moment().format('DDMMYY');
 
 bot.command('start', (ctx) => {
@@ -81,6 +80,8 @@ const userWizard = new Scenes.WizardScene(
 		return ctx.wizard.next();
 	},
 	(ctx) => {
+		ctx.scene.session.userId = ctx.from.id;
+		ctx.scene.session.username = ctx.from.username;
 		ctx.scene.session.nameNrank = ctx.message.text.toUpperCase();
 		ctx.reply(
 			'Which Battery is he / she from?',
@@ -161,8 +162,8 @@ const userWizard = new Scenes.WizardScene(
 		let updateDate = mcEnd;
 		let eSash = '';
 		if (ctx.message.text == 'Yes') {
-			ctx.replyWithHTML(
-				`<b>Forward the next message and update DOO if you fall into any of the below criteria</b>\n\n1. Did you travel overseas in the past 14 days?\n\n2. Did you make contact with a confirmed COVID-19 infected case?\n\n3. Did you stay in a foreign worker domitory?\n\n4. Do you work in an environment with higher risk of exposure to COVID-19?\n\n5. Do you have any ARI symptoms, fever (37.5°C or above)?\n\n6. Any pneumonia diagnosis from the doctor?`
+			await ctx.replyWithHTML(
+				`<b>Do also update DOO if you fall into any of the below criteria</b>\n\n1. Did you travel overseas in the past 14 days?\n\n2. Did you make contact with a confirmed COVID-19 infected case?\n\n3. Did you stay in a foreign worker domitory?\n\n4. Do you work in an environment with higher risk of exposure to COVID-19?\n\n5. Do you have any ARI symptoms, fever (37.5°C or above)?\n\n6. Any pneumonia diagnosis from the doctor?`
 			);
 			updateDate = moment().add(1, 'd').format('DDMMYY');
 			eSash = '\nE-SASH has been filed.';
@@ -173,7 +174,7 @@ const userWizard = new Scenes.WizardScene(
 		dooMessage = ctx.reply(
 			`CAA ${date} by ${dooName}. At around ${ctx.scene.session.time}HRS, ${ctx.scene.session.nameNrank}, ${ctx.scene.session.ic} from ${ctx.scene.session.battery} Battery reported sick at ${ctx.scene.session.location} for ${ctx.scene.session.reason}. He has gotten ${ctx.scene.session.duration} days ATT C from ${date} to ${mcEnd} inclusive. ${ctx.scene.session.medicine} was dispensed. Swab test was${ctx.scene.session.swab} administered.\n\nDOO on ${updateDate} to follow up on updates.\n${eSash}\nCDSO has been informed.\n${asis}`,
 			Markup.inlineKeyboard([
-				Markup.button.callback('Send message to the DOO', 'sendDOO'),
+				Markup.button.callback('Press this to send message to the DOO', 'sendDOO'),
 			])
 		);
 	}
@@ -199,13 +200,23 @@ const userWizard = new Scenes.WizardScene(
 		ctx.reply('What medicine was given?');
 		return ctx.wizard.next();
 	})
-	.action('sendDOO', (ctx) => {
-		ctx.forwardMessage(
+	.action('sendDOO', async (ctx) => {
+		await ctx.forwardMessage(
 			process.env.DOOPHONEID,
 			process.env.REPORTBOTID,
 			dooMessage.message_id
 		);
-		ctx.reply('Report was sent to the DOO', Markup.removeKeyboard());
+
+		ctx.reply(
+			'Report was sent to the DOO. Ensure DOO sends you an acknowledgement else call the DOO to update.',
+			Markup.removeKeyboard()
+		);
+
+		ctx.telegram.sendMessage(
+			process.env.DOOPHONEID,
+			`This report was sent by [${ctx.scene.session.username}](tg://user?id=${ctx.scene.session.userId})\\. Do send a message back to acknowledge that you received the message\\.`,
+			{ parse_mode: 'MarkdownV2' }
+		);
 		return ctx.scene.leave();
 	});
 
